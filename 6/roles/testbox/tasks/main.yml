@@ -1,0 +1,42 @@
+---
+- name: Install required packages
+  apt:
+    name: "{{ packages }}"
+    state: present
+  vars:
+    packages:
+      - python3
+      - python3-pip
+      - python3-django
+      - python3-psycopg2
+
+- name: Creating an empty file
+  file:
+    path: "/tmp/script.sh"
+    state: touch
+
+- name: Make sure we have a 'wheel' group
+  group:
+    name: wheel
+    state: present
+
+- name: Allow 'wheel' group to have passwordless sudo
+  lineinfile:
+    dest: /etc/sudoers
+    state: present
+    regexp: '^%wheel'
+    line: '%wheel ALL=(ALL) NOPASSWD: ALL'
+    validate: 'visudo -cf %s'
+
+- name: Add sudoers users to wheel group
+  user:
+    name=vagrant
+    groups=wheel
+    append=yes
+    state=present
+    createhome=yes
+
+- name: Set up authorized keys for the mysql user
+  authorized_key: user=vagrant key="{{item}}"
+  with_file:
+    - ../../../files/id_rsa.pub
